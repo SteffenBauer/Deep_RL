@@ -41,7 +41,7 @@ class Agent(object):
                         'win_ratio': [], 'avg_score': [], 'max_score': []}
 
     def train(self, game, epochs=1, initial_epoch=1, episodes=256,
-              batch_size=32, target_sync=256, gamma=0.9,
+              batch_size=32, train_freq = 32, target_sync=256, gamma=0.9,
               epsilon_start=1.0, epsilon_decay=0.5, epsilon_final=0.0,
               reset_memory=False, observe=0, verbose=1, callbacks=[]):
 
@@ -58,6 +58,7 @@ class Agent(object):
           episodes: Integer. Number of game episodes to play during one epoch.
           batch_size: Integer. Number of samples per gradient update.
             If unspecified, `batch_size` will default to 32.
+          train_freq: Integer. Train the Q-Network after these number of turns were played.
           target_sync: Update the target network after these number of turns were played.
           gamma: Float between 0.0 and < 1.0. Discount factor.
           epsilon_start: Starting exploration factor between 1.0 and 0.0.
@@ -82,6 +83,7 @@ class Agent(object):
 
         self.history['gamma'] = gamma
         epsilon = epsilon_start
+
         if observe > 0:
             self._fill_memory(game, observe)
 
@@ -90,7 +92,8 @@ class Agent(object):
 
         if self.with_target:
             self.target.set_weights(self.model.get_weights())
-            sync_count = 0
+
+        turn_count = 0
 
         for epoch in range(initial_epoch, epochs+1):
             win_count, scores = 0, []
@@ -111,12 +114,11 @@ class Agent(object):
                     self.memory.remember(S, action, r, Sn, game_over)
                     S = np.copy(Sn)
                     current_score += r
-                    if len(self.memory.memory) >= batch_size:
+                    turn_count += 1
+                    if (len(self.memory.memory) >= batch_size) and ((turn_count % train_freq) == 0):
                         result = self._train_step(gamma, batch_size)
-                    if self.with_target:
-                        sync_count += 1
-                        if (sync_count % target_sync) == 0:
-                            self.target.set_weights(self.model.get_weights())
+                    if self.with_target and ((turn_count % target_sync) == 0):
+                        self.target.set_weights(self.model.get_weights())
                     if game_over:
                         scores.append(current_score)
                         if game.is_won(): win_count += 1
@@ -179,32 +181,32 @@ class Agent(object):
         return np.argmax(self._get_action(state))
 
     @tf.function
-    def _get_new_qvalues_target(self, gamma, actions, rewards, next_states, dones):
+    def _get_new_qvalues_target(self, gamma, actions, rewards, next_states, game_overs):
         future_rewards = self.target(next_states, training=False)
-        updated_q_values = rewards + (gamma * (1.0 - dones) * tf.reduce_max(future_rewards, axis=1))
+        updated_q_values = rewards + (gamma * (1.0 - game_overs) * tf.reduce_max(future_rewards, axis=1))
         mask = tf.one_hot(actions, self.nb_actions)
         return updated_q_values, mask
 
     @tf.function
-    def _get_new_qvalues_model(self, gamma, actions, rewards, next_states, dones):
+    def _get_new_qvalues_model(self, gamma, actions, rewards, next_states, game_overs):
         future_rewards = self.model(next_states, training=False)
-        updated_q_values = rewards + (gamma * (1.0 - dones) * tf.reduce_max(future_rewards, axis=1))
+        updated_q_values = rewards + (gamma * (1.0 - game_overs) * tf.reduce_max(future_rewards, axis=1))
         mask = tf.one_hot(actions, self.nb_actions)
         return updated_q_values, mask
 
     def _train_step(self, gamma, batch_size):
         batch = self.memory.get_batch(self.model, batch_size)
-        states, actions, rewards, next_states, dones = [
+        states, actions, rewards, next_states, game_overs = [
             np.array([experience[field_index] for experience in batch])
                 for field_index in range(5)]
         if self.with_target:
             updated_q_values, mask = self._get_new_qvalues_target(gamma,
                 tf.constant(actions), tf.constant(rewards, dtype=tf.float32),
-                tf.constant(next_states, dtype=tf.float32), tf.constant(dones, dtype=tf.float32))
+                tf.constant(next_states, dtype=tf.float32), tf.constant(game_overs, dtype=tf.float32))
         else:
             updated_q_values, mask = self._get_new_qvalues_model(gamma,
                 tf.constant(actions), tf.constant(rewards, dtype=tf.float32),
-                tf.constant(next_states, dtype=tf.float32), tf.constant(dones, dtype=tf.float32))
+                tf.constant(next_states, dtype=tf.float32), tf.constant(game_overs, dtype=tf.float32))
         with tf.GradientTape() as tape:
             q_values = self.model(states, training=True)
             q_action = tf.reduce_sum(tf.multiply(q_values, mask), axis=1)

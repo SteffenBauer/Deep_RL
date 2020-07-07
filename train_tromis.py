@@ -33,6 +33,7 @@ params = {
     'batch_size': 128,
     'epochs': 500,
     'episodes': 32,
+    'train_freq': 32,
     'target_sync': 2048,
     'epsilon_start': 0.5,
     'epsilon_decay': 0.9,

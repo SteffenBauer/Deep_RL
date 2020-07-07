@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-PROFILING = True
+PROFILING = False
 
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -18,7 +18,7 @@ if PROFILING:
     import cProfile
     import pstats
 
-grid_size = 12
+grid_size = 16
 nb_frames = 1
 
 game = catch.Catch(grid_size, split_reward=True)
@@ -37,6 +37,7 @@ params = {
     'batch_size': 128,
     'epochs': 20,
     'episodes': 32,
+    'train_freq': 8,
     'target_sync': 64,
     'epsilon_start': 0.5,
     'epsilon_decay': 0.5,
