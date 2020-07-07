@@ -18,11 +18,10 @@ nb_frames = 1
 game = snake.Snake(grid_size, max_turn=128)
 
 inp = keras.layers.Input(shape=(nb_frames, grid_size, grid_size, 3))
-x = keras.layers.Conv3D(16,7,padding='same',strides=1,activation='relu')(inp)
-x = keras.layers.Conv3D(32,5,padding='same',strides=1,activation='relu')(x)
-x = keras.layers.Conv3D(64,3,padding='same',strides=1,activation='relu')(x)
+x = keras.layers.Conv3D(16,5,padding='same',strides=1,activation='relu')(inp)
+x = keras.layers.Conv3D(32,3,padding='same',strides=1,activation='relu')(x)
 x = keras.layers.GlobalMaxPooling3D()(x)
-x = keras.layers.Dense(128, activation='relu')(x)
+x = keras.layers.Dense(64, activation='relu')(x)
 act = keras.layers.Dense(game.nb_actions, activation='linear')(x)
 
 model = keras.models.Model(inputs=inp, outputs=act)
@@ -30,17 +29,17 @@ model.compile(keras.optimizers.RMSprop(), keras.losses.LogCosh())
 model.summary()
 
 params = {
-    'batch_size': 32,
-    'epochs': 50,
-    'episodes': 32,
+    'batch_size': 256,
+    'epochs': 100,
+    'episodes': 100,
     'train_freq': 32,
-    'target_sync': 256,
+    'target_sync': 512,
     'epsilon_start': 0.5,
     'epsilon_decay': 0.75,
     'epsilon_final': 0.0,
     'gamma': 0.9,
     'reset_memory': False,
-    'observe': 256
+    'observe': 500
 }
 
 rlparams = {

@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-PROFILING = False
-
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
@@ -13,10 +11,6 @@ from rl.games import catch
 from rl.agents import ddqn
 from rl.memory import uniqmemory
 from rl.callbacks import history
-
-if PROFILING:
-    import cProfile
-    import pstats
 
 grid_size = 16
 nb_frames = 1
@@ -34,11 +28,11 @@ model.compile(keras.optimizers.RMSprop(), keras.losses.LogCosh())
 model.summary()
 
 params = {
-    'batch_size': 128,
+    'batch_size': 256,
     'epochs': 20,
     'episodes': 32,
     'train_freq': 8,
-    'target_sync': 64,
+    'target_sync': 16,
     'epsilon_start': 0.5,
     'epsilon_decay': 0.5,
     'epsilon_final': 0.0,
@@ -65,14 +59,5 @@ memory = uniqmemory.UniqMemory(memory_size=rlparams['rl.memory_size'])
 agent = ddqn.Agent(model, memory, with_target=rlparams['rl.with_target'])
 #history = history.HistoryLog("catch", {**params, **rlparams, **gameparams})
 
-if PROFILING:
-    pr = cProfile.Profile()
-    pr.enable()
-
 agent.train(game, verbose=1, callbacks=[], **params)
-
-if PROFILING:
-    pr.disable()
-    stats = pstats.Stats(pr).sort_stats('cumulative')
-    stats.print_stats("Deep_RL")
 

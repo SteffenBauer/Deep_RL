@@ -18,8 +18,7 @@ nb_frames = 1
 game = fruit.Fruit(grid_size, with_poison=True)
 
 inp = keras.layers.Input(shape=(nb_frames, grid_size, grid_size, 3))
-x = keras.layers.Conv3D(8,7,padding='same',strides=1,activation='relu')(inp)
-x = keras.layers.Conv3D(16,5,padding='same',strides=1,activation='relu')(x)
+x = keras.layers.Conv3D(16,5,padding='same',strides=1,activation='relu')(inp)
 x = keras.layers.Conv3D(32,3,padding='same',strides=1,activation='relu')(x)
 x = keras.layers.GlobalMaxPooling3D()(x)
 x = keras.layers.Dense(64, activation='relu')(x)
@@ -30,17 +29,17 @@ model.compile(keras.optimizers.RMSprop(), keras.losses.LogCosh())
 model.summary()
 
 params = {
-    'batch_size': 128,
+    'batch_size': 256,
     'epochs': 100,
     'episodes': 32,
-    'train_freq': 16,
-    'target_sync': 1024,
+    'train_freq': 32,
+    'target_sync': 512,
     'epsilon_start': 0.5,
     'epsilon_decay': 0.75,
     'epsilon_final': 0.0,
     'gamma': 0.95,
     'reset_memory': False,
-    'observe': 128
+    'observe': 500
 }
 
 rlparams = {
