@@ -112,7 +112,7 @@ class Agent(object):
                     S = np.copy(Sn)
                     current_score += r
                     if len(self.memory.memory) >= batch_size:
-                        result = self._replay(gamma, batch_size)
+                        result = self._train_step(gamma, batch_size)
                     if self.with_target:
                         sync_count += 1
                         if (sync_count % target_sync) == 0:
@@ -155,6 +155,11 @@ class Agent(object):
 
         return self.history
 
+    @tf.function
+    def _get_action(self, state):
+        Q_values = self.model(state[np.newaxis], training=False)
+        return Q_values[0] #tf.math.argmax(Q_values[0]).numpy()
+
     def act(self, game, state, epsilon=0.0):
         """
         Choose a game action on a given game state.
@@ -169,29 +174,45 @@ class Agent(object):
           The chosen game action. Integer between 0 and `game.nb_actions`.
 
         """
-        if random.random() <= epsilon:
-            return random.randrange(self.nb_actions)
-        act_values = self.model.predict(np.expand_dims(np.asarray(state), axis=0))
-        result = np.argmax(act_values[0])
-        return result
+        if np.random.rand() < epsilon:
+            return np.random.randint(self.nb_actions)
+        return np.argmax(self._get_action(state))
 
-    def _replay(self, gamma, batch_size):
+    @tf.function
+    def _get_new_qvalues_target(self, gamma, actions, rewards, next_states, dones):
+        future_rewards = self.target(next_states, training=False)
+        updated_q_values = rewards + (gamma * (1.0 - dones) * tf.reduce_max(future_rewards, axis=1))
+        mask = tf.one_hot(actions, self.nb_actions)
+        return updated_q_values, mask
+
+    @tf.function
+    def _get_new_qvalues_model(self, gamma, actions, rewards, next_states, dones):
+        future_rewards = self.model(next_states, training=False)
+        updated_q_values = rewards + (gamma * (1.0 - dones) * tf.reduce_max(future_rewards, axis=1))
+        mask = tf.one_hot(actions, self.nb_actions)
+        return updated_q_values, mask
+
+    def _train_step(self, gamma, batch_size):
         batch = self.memory.get_batch(self.model, batch_size)
-        if batch:
-            states, actions, rewards, next_states, game_over_s = zip(*batch)
-            predicted_rewards = self.model.predict(np.asarray(states))
-            if self.with_target:
-                predicted_next_rewards = self.target.predict(np.asarray(next_states))
-            else:
-                predicted_next_rewards = self.model.predict(np.asarray(next_states))
-            rewards = list(rewards)
-            targets = np.zeros((len(rewards), self.nb_actions))
-            for i in range(len(predicted_rewards)):
-                targets[i] = predicted_rewards[i]
-                targets[i,actions[i]] = rewards[i]
-                if not game_over_s[i]:
-                    targets[i,actions[i]] += gamma*np.max(predicted_next_rewards[i])
-            return self.model.train_on_batch(np.asarray(states), targets)
+        states, actions, rewards, next_states, dones = [
+            np.array([experience[field_index] for experience in batch])
+                for field_index in range(5)]
+        if self.with_target:
+            updated_q_values, mask = self._get_new_qvalues_target(gamma,
+                tf.constant(actions), tf.constant(rewards, dtype=tf.float32),
+                tf.constant(next_states, dtype=tf.float32), tf.constant(dones, dtype=tf.float32))
+        else:
+            updated_q_values, mask = self._get_new_qvalues_model(gamma,
+                tf.constant(actions), tf.constant(rewards, dtype=tf.float32),
+                tf.constant(next_states, dtype=tf.float32), tf.constant(dones, dtype=tf.float32))
+        with tf.GradientTape() as tape:
+            q_values = self.model(states, training=True)
+            q_action = tf.reduce_sum(tf.multiply(q_values, mask), axis=1)
+            loss = self.model.loss(updated_q_values, q_action)
+
+        grads = tape.gradient(loss, self.model.trainable_variables)
+        self.model.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
+        return loss
 
     def _fill_memory(self, game, episodes):
         print("Fill memory for {} episodes".format(episodes))

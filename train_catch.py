@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
 
+PROFILING = True
+
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 import tensorflow as tf
 import tensorflow.keras as keras
-tf.compat.v1.disable_eager_execution()
 tf.get_logger().setLevel('ERROR')
 
-from games import catch
-from agents import ddqn
-from memory import uniqmemory
-from callbacks import history
+from rl.games import catch
+from rl.agents import ddqn
+from rl.memory import uniqmemory
+from rl.callbacks import history
+
+if PROFILING:
+    import cProfile
+    import pstats
 
 grid_size = 12
 nb_frames = 1
@@ -19,17 +24,17 @@ nb_frames = 1
 game = catch.Catch(grid_size, split_reward=True)
 
 inp = keras.layers.Input(shape=(nb_frames, grid_size, grid_size, 3))
-x = keras.layers.Conv3D(16,3,padding='same',strides=1,activation='relu')(inp)
+x = keras.layers.Conv3D(16,5,padding='same',strides=1,activation='relu')(inp)
 x = keras.layers.Flatten()(x)
 x = keras.layers.Dense(32, activation='relu')(x)
 act = keras.layers.Dense(game.nb_actions, activation='linear')(x)
 
 model = keras.models.Model(inputs=inp, outputs=act)
-model.compile(keras.optimizers.RMSprop(), 'logcosh')
+model.compile(keras.optimizers.RMSprop(), keras.losses.LogCosh())
 model.summary()
 
 params = {
-    'batch_size': 32,
+    'batch_size': 128,
     'epochs': 20,
     'episodes': 32,
     'target_sync': 64,
@@ -57,7 +62,16 @@ gameparams = {
 
 memory = uniqmemory.UniqMemory(memory_size=rlparams['rl.memory_size'])
 agent = ddqn.Agent(model, memory, with_target=rlparams['rl.with_target'])
-history = history.HistoryLog("catch", {**params, **rlparams, **gameparams})
+#history = history.HistoryLog("catch", {**params, **rlparams, **gameparams})
 
-agent.train(game, verbose=1, callbacks=[history], **params)
+if PROFILING:
+    pr = cProfile.Profile()
+    pr.enable()
+
+agent.train(game, verbose=1, callbacks=[], **params)
+
+if PROFILING:
+    pr.disable()
+    stats = pstats.Stats(pr).sort_stats('cumulative')
+    stats.print_stats("Deep_RL")
 
