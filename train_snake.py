@@ -15,7 +15,7 @@ from rl.callbacks import history
 grid_size = 12
 nb_frames = 1
 
-game = snake.Snake(grid_size, max_turn=128)
+game = snake.Snake(grid_size, max_turn=256)
 
 inp = keras.layers.Input(shape=(nb_frames, grid_size, grid_size, 3))
 x = keras.layers.Conv3D(16,5,padding='same',strides=1,activation='relu')(inp)
@@ -58,7 +58,7 @@ gameparams = {
 
 memory = uniqmemory.UniqMemory(memory_size=rlparams['rl.memory_size'])
 agent = ddqn.Agent(model, memory, with_target=rlparams['rl.with_target'])
-#history = history.HistoryLog("snake_ddqn", {**params, **rlparams, **gameparams})
+history = history.HistoryLog("snake_ddqn", {**params, **rlparams, **gameparams})
 
-agent.train(game, verbose=1, callbacks=[], **params)
+agent.train(game, verbose=1, callbacks=[history], **params)
 

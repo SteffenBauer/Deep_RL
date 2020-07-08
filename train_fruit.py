@@ -31,7 +31,7 @@ model.summary()
 params = {
     'batch_size': 256,
     'epochs': 100,
-    'episodes': 32,
+    'episodes': 100,
     'train_freq': 32,
     'target_sync': 512,
     'epsilon_start': 0.5,
@@ -59,7 +59,7 @@ gameparams = {
 
 memory = uniqmemory.UniqMemory(memory_size=rlparams['rl.memory_size'])
 agent = ddqn.Agent(model, memory, with_target=rlparams['rl.with_target'])
-#history = history.HistoryLog("fruit", {**params, **rlparams, **gameparams})
+history = history.HistoryLog("fruit", {**params, **rlparams, **gameparams})
 
-agent.train(game, verbose=1, callbacks=[], **params)
+agent.train(game, verbose=1, callbacks=[history], **params)
 

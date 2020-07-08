@@ -58,7 +58,6 @@ gameparams = {
 
 memory = uniqmemory.UniqMemory(memory_size=rlparams['rl.memory_size'])
 agent = ddqn.Agent(model, memory, with_target=rlparams['rl.with_target'])
-#history = history.HistoryLog("tromis", {**params, **rlparams, **gameparams})
+history = history.HistoryLog("tromis", {**params, **rlparams, **gameparams})
 
-agent.train(game, verbose=1, callbacks=[], **params)
-
+agent.train(game, verbose=1, callbacks=[history], **params)
