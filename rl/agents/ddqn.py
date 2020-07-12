@@ -5,6 +5,7 @@ import tensorflow as tf
 import tensorflow.keras as keras
 import sys
 import random
+import time
 
 def update_progress(msg, progress):
     text = "\r{0} {1:>7.2%}".format(msg, progress)
@@ -88,7 +89,7 @@ class Agent(object):
             self._fill_memory(game, observe)
 
         if verbose > 0:
-            print("{:^10s}|{:^9s}|{:^14s}|{:^9s}|{:^15s}|{:^8s}".format("Epoch", "Epsilon", "Episode", "Win", "Avg/Max Score", "Memory"))
+            print("{:^10s}|{:^9s}|{:^14s}|{:^9s}|{:^15s}|{:^8s}|{:^6s}".format("Epoch", "Epsilon", "Episode", "Win", "Avg/Max Score", "Memory", "Time"))
 
         if self.with_target:
             self.target.set_weights(self.model.get_weights())
@@ -96,7 +97,7 @@ class Agent(object):
         turn_count = 0
 
         for epoch in range(initial_epoch, epochs+1):
-            win_count, scores = 0, []
+            win_count, scores, start_time = 0, [], time.time()
             if reset_memory: self.memory.reset()
             for episode in range(episodes):
                 game.reset()
@@ -133,12 +134,13 @@ class Agent(object):
             avg_score = float(sum(scores)/float(episodes))
             max_score = float(max(scores))
             memory_fill = len(self.memory.memory)
+            epoch_time = time.time() - start_time
             if verbose == 2:
                 print("{0: 4d}/{1: 4d} |   {2:.2f}  |    {3: 4d}    ".format(
                     epoch, epochs, epsilon, episode), end=' ')
             if verbose > 0:
-                print(" | {0:>7.2%} | {1: 5.2f} /{2: 5.2f}  | {3: 6d}".format(
-                    win_ratio, avg_score, max_score, memory_fill))
+                print(" | {0:>7.2%} | {1: 5.2f} /{2: 5.2f}  | {3: 6d} | {4: 5.0f}".format(
+                    win_ratio, avg_score, max_score, memory_fill, epoch_time))
 
             self.history['epsilon'].append(epsilon)
             self.history['win_ratio'].append(win_ratio)
