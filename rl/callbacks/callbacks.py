@@ -44,7 +44,7 @@ class Callback(object):
             avg_score    Average game score in this epoch
             max_score    Highest game score in this epoch
             memory_fill  Records in the replay memory
-
+            epoch_time   Time in seconds for this epoch
         """
         pass
 

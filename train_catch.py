@@ -18,9 +18,10 @@ nb_frames = 1
 game = catch.Catch(grid_size, split_reward=True)
 
 inp = keras.layers.Input(shape=(nb_frames, grid_size, grid_size, 3))
-x = keras.layers.Conv3D(16,5,padding='same',strides=1,activation='relu')(inp)
-x = keras.layers.Flatten()(x)
-x = keras.layers.Dense(32, activation='relu')(x)
+x = keras.layers.Conv3D(32,7,padding='same',strides=1,activation='relu')(inp)
+x = keras.layers.Conv3D(64,3,padding='same',strides=1,activation='relu')(x)
+x = keras.layers.GlobalMaxPooling3D()(x)
+x = keras.layers.Dense(64, activation='relu')(x)
 act = keras.layers.Dense(game.nb_actions, activation='linear')(x)
 
 model = keras.models.Model(inputs=inp, outputs=act)
@@ -32,7 +33,7 @@ params = {
     'epochs': 20,
     'episodes': 32,
     'train_freq': 8,
-    'target_sync': 16,
+    'target_sync': 128,
     'epsilon_start': 0.5,
     'epsilon_decay': 0.5,
     'epsilon_final': 0.0,
@@ -57,7 +58,7 @@ gameparams = {
 
 memory = uniqmemory.UniqMemory(memory_size=rlparams['rl.memory_size'])
 agent = ddqn.Agent(model, memory, with_target=rlparams['rl.with_target'])
-#history = history.HistoryLog("catch", {**params, **rlparams, **gameparams})
+history = history.HistoryLog("catch", {**params, **rlparams, **gameparams})
 
-agent.train(game, verbose=1, callbacks=[], **params)
+agent.train(game, verbose=1, callbacks=[history], **params)
 

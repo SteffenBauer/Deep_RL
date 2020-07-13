@@ -89,7 +89,7 @@ class Agent(object):
             self._fill_memory(game, observe)
 
         if verbose > 0:
-            print("{:^10s}|{:^9s}|{:^14s}|{:^9s}|{:^15s}|{:^8s}|{:^6s}".format("Epoch", "Epsilon", "Episode", "Win", "Avg/Max Score", "Memory", "Time"))
+            print("{:^10s}|{:^9s}|{:^14s}|{:^9s}|{:^15s}|{:^8s}|{:^8s}".format("Epoch", "Epsilon", "Episode", "Win", "Avg/Max Score", "Memory", "Time"))
 
         if self.with_target:
             self.target.set_weights(self.model.get_weights())
@@ -151,7 +151,7 @@ class Agent(object):
             for c in callbacks: 
                 c.epoch_end(
                     self.model, game.name, epoch, epsilon,
-                    win_ratio, avg_score, max_score, memory_fill
+                    win_ratio, avg_score, max_score, memory_fill, epoch_time
                 )
 
             epsilon *= epsilon_decay
