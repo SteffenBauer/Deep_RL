@@ -13,7 +13,7 @@ class BasicMemory(Memory):
         if self.memory_size is not None and len(self.memory) > self.memory_size:
             self.memory.pop(0)
 
-    def get_batch(self, _model, batch_size):
+    def get_batch(self, batch_size):
         if len(self.memory) < batch_size:
             return False
         return random.sample(self.memory, batch_size)

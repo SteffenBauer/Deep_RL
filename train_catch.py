@@ -18,8 +18,8 @@ nb_frames = 1
 game = catch.Catch(grid_size, split_reward=True)
 
 inp = keras.layers.Input(shape=(nb_frames, grid_size, grid_size, 3))
-x = keras.layers.Conv3D(32,7,padding='same',strides=1,activation='relu')(inp)
-x = keras.layers.Conv3D(64,3,padding='same',strides=1,activation='relu')(x)
+x = keras.layers.Conv3D(16,7,padding='same',strides=2,activation='relu')(inp)
+x = keras.layers.Conv3D(32,3,padding='same',strides=1,activation='relu')(x)
 x = keras.layers.GlobalMaxPooling3D()(x)
 x = keras.layers.Dense(64, activation='relu')(x)
 act = keras.layers.Dense(game.nb_actions, activation='linear')(x)

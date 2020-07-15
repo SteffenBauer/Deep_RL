@@ -12,16 +12,16 @@ from rl.agents import ddqn
 from rl.memory import uniqmemory
 from rl.callbacks import history
 
-width, height = 6, 9
-nb_frames = 1
+width, height = 7, 10
+nb_frames = 2
 
 game = tromis.Tromis(width, height, max_turn=512)
 
 inp = keras.layers.Input(shape=(nb_frames, height, width, 3))
-x = keras.layers.Conv3D(32,5,padding='same',strides=1,activation='relu')(inp)
-x = keras.layers.Conv3D(64,3,padding='same',strides=1,activation='relu')(x)
+x = keras.layers.Conv3D(64,5,padding='same',strides=1,activation='relu')(inp)
+x = keras.layers.Conv3D(128,3,padding='same',strides=1,activation='relu')(x)
 x = keras.layers.GlobalMaxPooling3D()(x)
-x = keras.layers.Dense(128, activation='relu')(x)
+x = keras.layers.Dense(256, activation='relu')(x)
 act = keras.layers.Dense(game.nb_actions, activation='linear')(x)
 
 model = keras.models.Model(inputs=inp, outputs=act)
@@ -30,16 +30,16 @@ model.summary()
 
 params = {
     'batch_size': 256,
-    'epochs': 100,
+    'epochs': 200,
     'episodes': 100,
     'train_freq': 32,
     'target_sync': 512,
     'epsilon_start': 0.5,
-    'epsilon_decay': 0.9,
+    'epsilon_decay': 0.75,
     'epsilon_final': 0.0,
-    'gamma': 0.95,
+    'gamma': 0.92,
     'reset_memory': False,
-    'observe': 500
+    'observe': 100
 }
 
 rlparams = {

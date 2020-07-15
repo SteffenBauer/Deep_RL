@@ -7,6 +7,7 @@ class Fruit(Game):
         self.grid_size = grid_size
         self.with_border = with_border
         self.with_poison = with_poison
+        self.with_penalty = with_penalty
         self.fixed = fixed
         self.penalty = -0.1/float(max_turn) if with_penalty else 0.0
         self.max_turn = max_turn
@@ -90,7 +91,6 @@ class Fruit(Game):
     def get_state(self):
         canvas = np.zeros((self.grid_size,self.grid_size,3))
         canvas[self.xa, self.ya, :] = (0.5,0.5,0.5) # Grey mouse
-        #canvas[self.xa, self.ya, :] = (0,0,1) # Blue mouse
         canvas[self.xf, self.yf, :] = (1,1,0) # Yellow fruit
         if self.with_poison:
             canvas[self.xp, self.yp, :] = (0,1,1) # Cyan poison
@@ -102,11 +102,11 @@ class Fruit(Game):
 
     def get_score(self):
         if self.starved:
-            score = 0
+            score = -0.9 if self.with_penalty else -1.0
         elif self.is_lost():
-            score = -1
+            score = -1.0
         elif self.eaten:
-            score = 1
+            score = 1.0
         else:
             score = self.penalty
         return score

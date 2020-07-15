@@ -15,11 +15,11 @@ from rl.callbacks import history
 grid_size = 12
 nb_frames = 1
 
-game = fruit.Fruit(grid_size, with_poison=True)
+game = fruit.Fruit(grid_size, with_penalty=False, with_poison=True)
 
 inp = keras.layers.Input(shape=(nb_frames, grid_size, grid_size, 3))
-x = keras.layers.Conv3D(16,5,padding='same',strides=1,activation='relu')(inp)
-x = keras.layers.Conv3D(32,3,padding='same',strides=1,activation='relu')(x)
+x = keras.layers.Conv3D(64,7,padding='same',strides=2,activation='relu')(inp)
+x = keras.layers.Conv3D(128,3,padding='same',strides=1,activation='relu')(x)
 x = keras.layers.GlobalMaxPooling3D()(x)
 x = keras.layers.Dense(64, activation='relu')(x)
 act = keras.layers.Dense(game.nb_actions, activation='linear')(x)

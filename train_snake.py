@@ -13,12 +13,12 @@ from rl.memory import uniqmemory
 from rl.callbacks import history
 
 grid_size = 12
-nb_frames = 1
+nb_frames = 2
 
-game = snake.Snake(grid_size, max_turn=256)
+game = snake.Snake(grid_size, max_turn=128)
 
 inp = keras.layers.Input(shape=(nb_frames, grid_size, grid_size, 3))
-x = keras.layers.Conv3D(16,5,padding='same',strides=1,activation='relu')(inp)
+x = keras.layers.Conv3D(16,7,padding='same',strides=2,activation='relu')(inp)
 x = keras.layers.Conv3D(32,3,padding='same',strides=1,activation='relu')(x)
 x = keras.layers.GlobalMaxPooling3D()(x)
 x = keras.layers.Dense(64, activation='relu')(x)
