@@ -91,13 +91,14 @@ class Fruit(Game):
     def get_state(self):
         canvas = np.zeros((self.grid_size,self.grid_size,3))
         canvas[self.xa, self.ya, :] = (0.5,0.5,0.5) # Grey mouse
-        canvas[self.xf, self.yf, :] = (1,1,0) # Yellow fruit
+        #canvas[self.xa, self.ya, :] = (0.0,0.0,1.0) # Blue mouse
+        canvas[self.xf, self.yf, :] = (1.0,1.0,0.0) # Yellow fruit
         if self.with_poison:
-            canvas[self.xp, self.yp, :] = (0,1,1) # Cyan poison
+            canvas[self.xp, self.yp, :] = (0.0,1.0,1.0) # Cyan poison
         if self.starved or self.bumped or self.poisoned:
-            canvas[self.xa, self.ya, :] = (1,0,0) # Red mouse if lost
+            canvas[self.xa, self.ya, :] = (1.0,0.0,0.0) # Red mouse if lost
         if self.eaten:
-            canvas[self.xa, self.ya, :] = (0,1,0) # Green mouse if won
+            canvas[self.xa, self.ya, :] = (0.0,1.0,0.0) # Green mouse if won
         return canvas
 
     def get_score(self):

@@ -15,12 +15,13 @@ from rl.callbacks import history
 grid_size = 12
 nb_frames = 1
 
-game = fruit.Fruit(grid_size, with_penalty=False, with_poison=True)
+game = fruit.Fruit(grid_size, with_penalty=False, with_poison=False)
 
 inp = keras.layers.Input(shape=(nb_frames, grid_size, grid_size, 3))
-x = keras.layers.Conv3D(64,7,padding='same',strides=2,activation='relu')(inp)
-x = keras.layers.Conv3D(128,3,padding='same',strides=1,activation='relu')(x)
-x = keras.layers.GlobalMaxPooling3D()(x)
+x = keras.layers.Conv3D(16,5,padding='same',strides=1,activation='relu')(inp)
+x = keras.layers.AveragePooling3D(padding='same')(x)
+x = keras.layers.Conv3D(32,3,padding='same',strides=1,activation='relu')(x)
+x = keras.layers.GlobalAveragePooling3D()(x)
 x = keras.layers.Dense(64, activation='relu')(x)
 act = keras.layers.Dense(game.nb_actions, activation='linear')(x)
 
@@ -32,12 +33,12 @@ params = {
     'batch_size': 256,
     'epochs': 100,
     'episodes': 100,
-    'train_freq': 32,
+    'train_freq': 4,
     'target_sync': 512,
     'epsilon_start': 0.5,
     'epsilon_decay': 0.75,
     'epsilon_final': 0.0,
-    'gamma': 0.95,
+    'gamma': 0.9,
     'reset_memory': False,
     'observe': 500
 }
@@ -59,7 +60,7 @@ gameparams = {
 
 memory = uniqmemory.UniqMemory(memory_size=rlparams['rl.memory_size'])
 agent = ddqn.Agent(model, memory, with_target=rlparams['rl.with_target'])
-history = history.HistoryLog("fruit", {**params, **rlparams, **gameparams})
+#history = history.HistoryLog("fruit", {**params, **rlparams, **gameparams})
 
-agent.train(game, verbose=1, callbacks=[history], **params)
+agent.train(game, verbose=1, callbacks=[], **params)
 

@@ -18,10 +18,11 @@ nb_frames = 2
 game = tromis.Tromis(width, height, max_turn=512)
 
 inp = keras.layers.Input(shape=(nb_frames, height, width, 3))
-x = keras.layers.Conv3D(64,5,padding='same',strides=1,activation='relu')(inp)
-x = keras.layers.Conv3D(128,3,padding='same',strides=1,activation='relu')(x)
-x = keras.layers.GlobalMaxPooling3D()(x)
-x = keras.layers.Dense(256, activation='relu')(x)
+x = keras.layers.Conv3D(32,7,padding='same',strides=1,activation='relu')(inp)
+x = keras.layers.AveragePooling3D(padding='same')(x)
+x = keras.layers.Conv3D(64,3,padding='same',strides=1,activation='relu')(x)
+x = keras.layers.GlobalAveragePooling3D()(x)
+x = keras.layers.Dense(128, activation='relu')(x)
 act = keras.layers.Dense(game.nb_actions, activation='linear')(x)
 
 model = keras.models.Model(inputs=inp, outputs=act)
@@ -58,6 +59,6 @@ gameparams = {
 
 memory = uniqmemory.UniqMemory(memory_size=rlparams['rl.memory_size'])
 agent = ddqn.Agent(model, memory, with_target=rlparams['rl.with_target'])
-history = history.HistoryLog("tromis", {**params, **rlparams, **gameparams})
+#history = history.HistoryLog("tromis", {**params, **rlparams, **gameparams})
 
-agent.train(game, verbose=1, callbacks=[history], **params)
+agent.train(game, verbose=1, callbacks=[], **params)
