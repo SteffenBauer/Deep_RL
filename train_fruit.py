@@ -31,7 +31,7 @@ model.summary()
 
 params = {
     'batch_size': 256,
-    'epochs': 100,
+    'epochs': 10,
     'episodes': 100,
     'train_freq': 4,
     'target_sync': 512,

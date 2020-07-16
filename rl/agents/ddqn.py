@@ -39,7 +39,8 @@ class Agent(object):
         self.nb_actions = self.model.output_shape[1]
 
         self.history = {'gamma': 0, 'epsilon': [], 'memory_fill': [],
-                        'win_ratio': [], 'avg_score': [], 'max_score': []}
+                        'win_ratio': [], 'avg_score': [], 'max_score': [],
+                        'avg_turns': [], 'max_turns': [], 'epoch_time': []}
 
     def train(self, game, epochs=1, initial_epoch=1, episodes=256,
               batch_size=32, train_freq = 32, target_sync=256, gamma=0.9,
@@ -77,9 +78,11 @@ class Agent(object):
             - epsilon:      Epsilon value
             - avg_score:    Average game score
             - max_score:    Maximum reached game score
+            - avg_turns:    Average number of episode turns
+            - max_turns:    Maximum reached turns
             - win_ratio:    Percentage of won games
             - memory_fill:  Records in the replay memory
-
+            - epoch_time:   Time in seconds
         """
 
         self.history['gamma'] = gamma
@@ -89,15 +92,15 @@ class Agent(object):
             self._fill_memory(game, observe)
 
         if verbose > 0:
-            print("{:^10s}|{:^9s}|{:^14s}|{:^9s}|{:^15s}|{:^8s}|{:^8s}".format("Epoch", "Epsilon", "Episode", "Win", "Avg/Max Score", "Memory", "Time"))
+            print("{:^10s}|{:^9s}|{:^14s}|{:^9s}|{:^15s}|{:^17s}|{:^8s}|{:^8s}".format("Epoch", "Epsilon", "Episode", "Win", "Avg/Max Score", "Avg/Max Turns", "Memory", "Time"))
 
         if self.with_target:
             self.target.set_weights(self.model.get_weights())
 
-        turn_count = 0
+        train_count = 0
 
         for epoch in range(initial_epoch, epochs+1):
-            win_count, scores, start_time = 0, [], time.time()
+            win_count, scores, turns, start_time = 0, [], [], time.time()
             if reset_memory: self.memory.reset()
             for episode in range(episodes):
                 game.reset()
@@ -106,6 +109,7 @@ class Agent(object):
                 F = np.expand_dims(game.get_frame(), axis=0)
                 S = np.repeat(F, self.num_frames, axis=0)
                 current_score = 0.0
+                turn_counter = 0
                 while True:
                     action, pred_q = self.act(game, S, epsilon)
                     Fn, r, game_over = game.play(action)
@@ -115,13 +119,15 @@ class Agent(object):
                     self.memory.remember(S, action, r, Sn, game_over)
                     S = np.copy(Sn)
                     current_score += r
-                    turn_count += 1
-                    if (len(self.memory.memory) >= batch_size) and ((turn_count % train_freq) == 0):
+                    train_count += 1
+                    turn_counter += 1
+                    if (len(self.memory.memory) >= batch_size) and ((train_count % train_freq) == 0):
                         result = self._train_step(gamma, batch_size)
-                    if self.with_target and ((turn_count % target_sync) == 0):
+                    if self.with_target and ((train_count % target_sync) == 0):
                         self.target.set_weights(self.model.get_weights())
                     if game_over:
                         scores.append(current_score)
+                        turns.append(turn_counter)
                         if game.is_won(): win_count += 1
                         for c in callbacks:
                             c.game_over()
@@ -133,25 +139,30 @@ class Agent(object):
             win_ratio = float(win_count)/float(episodes)
             avg_score = float(sum(scores)/float(episodes))
             max_score = float(max(scores))
+            avg_turns = float(sum(turns)/float(episodes))
+            max_turns = float(max(turns))
             memory_fill = len(self.memory.memory)
             epoch_time = time.time() - start_time
             if verbose == 2:
                 print("{0: 4d}/{1: 4d} |   {2:.2f}  |    {3: 4d}    ".format(
                     epoch, epochs, epsilon, episode), end=' ')
             if verbose > 0:
-                print(" | {0:>7.2%} | {1: 5.2f} /{2: 5.2f}  | {3: 6d} | {4: 5.0f}".format(
-                    win_ratio, avg_score, max_score, memory_fill, epoch_time))
+                print(" | {0:>7.2%} | {1: 5.2f} /{2: 5.2f}  | {3: 5.2f} /{4: 5.2f}  | {5: 6d} | {6: 5.0f}".format(
+                    win_ratio, avg_score, max_score, avg_turns, max_turns, memory_fill, epoch_time))
 
             self.history['epsilon'].append(epsilon)
             self.history['win_ratio'].append(win_ratio)
             self.history['avg_score'].append(avg_score)
             self.history['max_score'].append(max_score)
+            self.history['avg_turns'].append(avg_turns)
+            self.history['max_turns'].append(max_turns)
             self.history['memory_fill'].append(memory_fill)
+            self.history['epoch_time'].append(epoch_time)
 
             for c in callbacks: 
                 c.epoch_end(
                     self.model, game.name, epoch, epsilon,
-                    win_ratio, avg_score, max_score, memory_fill, epoch_time
+                    win_ratio, avg_score, max_score, avg_turns, max_turns, memory_fill, epoch_time
                 )
 
             epsilon *= epsilon_decay
