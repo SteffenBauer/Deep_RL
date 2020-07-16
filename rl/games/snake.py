@@ -19,31 +19,34 @@ class Snake(Game):
 
     def play(self, action):
         if self.is_over() or (action not in range(self.nb_actions)):
-            return
+            return (self.get_frame(), self.get_score(), self.is_over())
         self.scored = False
         self.turn += 1
         self.move_snake(action)
-        if self.is_over():
-            self.snake.pop()
-            self.game_over = True
-        elif self.fruit != self.snake[0]:
-            self.snake.pop()
-        else:
+
+        if self.self_bite():
+            self.bitten = True
+
+        if self.fruit == self.snake[0]:
             self.scored = True
-            self.drop_fruit()
+            if not self.drop_fruit():
+                self.snake.pop()
+        else:
+            self.snake.pop()
 
         return (self.get_frame(), self.get_score(), self.is_over())
 
     def drop_fruit(self):
         if len(self.snake) >= (self.grid_size - 2) ** 2:
             self.fruit = (-1, -1)
-            return
+            return False
         while True:
             fruit_x = random.randrange(1, self.grid_size-1)
             fruit_y = random.randrange(1, self.grid_size-1)
             if (fruit_x, fruit_y) not in self.snake:
                 self.fruit = (fruit_x, fruit_y)
                 break
+        return True
 
     def move_snake(self, action):
         h = self.snake[0]
@@ -83,11 +86,12 @@ class Snake(Game):
         canvas[self.snake[0][0], self.snake[0][1], :] = (0,1,0)
 
         # Purple snake head if bitten
-        if self.self_bite() or self.hit_border():
+        if self.had_bumped():
             canvas[self.snake[0][0], self.snake[0][1], :] = (1,0,1)
 
         # Blue fruit
-        canvas[self.fruit[0], self.fruit[1], :] = (0,0,1)
+        if self.fruit != (-1,-1):
+            canvas[self.fruit[0], self.fruit[1], :] = (0,0,1)
 
         return canvas
 
@@ -105,7 +109,7 @@ class Snake(Game):
         snake_length = self.snake_length
         head_x = (grid_size - snake_length) // 2
         self.snake = [(x, grid_size // 2) for x in range (head_x, head_x + snake_length)]
-        self.game_over = False
+        self.bitten = False
         self.scored = False
         self.turn = 0
         self.drop_fruit()
@@ -116,7 +120,7 @@ class Snake(Game):
             self.border += [(z, 0), (z, grid_size - 1), (0, z), (grid_size - 1, z)]
 
     def self_bite(self):
-        return len(self.snake) > len(set(self.snake))
+        return self.bitten or (len(self.snake) > len(set(self.snake)))
 
     def hit_border(self):
         return self.snake[0] in self.border
@@ -134,5 +138,5 @@ class Snake(Game):
         return len(self.snake) > self.snake_length
 
     def is_won(self):
-        return self.is_over() and not self.had_bumped() and self.has_eaten()
+        return self.timeout() and self.has_eaten() and not self.had_bumped()
 

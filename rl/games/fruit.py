@@ -47,7 +47,7 @@ class Fruit(Game):
 
     def play(self, action):
         if self.is_over() or (action not in range(self.nb_actions)):
-            return
+            return (self.get_frame(), self.get_score(), self.is_over())
 
         if action == 0: self.ya -= 1
         if action == 1: self.ya += 1
