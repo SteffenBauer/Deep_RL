@@ -4,16 +4,17 @@ from .game import Game
 
 class Catch(Game):
 
-    def __init__(self, grid_size=10, with_penalty=False, split_reward=False):
+    def __init__(self, grid_size=10, with_penalty=False, split_reward=False, hop=0.0):
         self.grid_size = grid_size
         self.with_penalty = with_penalty
         self.split_reward = split_reward
+        self.hop = hop
         self.reset()
 
     def reset(self):
-        n = random.randrange(0, self.grid_size-1)
-        m = random.randrange(1, self.grid_size-2)
-        self.state = [0, n, m]
+        fx = random.randrange(0, self.grid_size-1)
+        bx = random.randrange(1, self.grid_size-2)
+        self.state = [0, fx, bx]
         self.penalty = 0.0
         return self.get_frame()
 
@@ -34,6 +35,11 @@ class Catch(Game):
             new_basket = min(self.grid_size-2, basket+1)
         else:
             new_basket = basket
+        if random.random() < self.hop:
+            if random.random() <= 0.5:
+                fx = max(0, fx-1)
+            else:
+                fx = min(self.grid_size-1, fx+1)
         self.state = [fy+1, fx, new_basket]
         self.penalty = 0.0 if action == 1 else -0.05
         return (self.get_frame(), self.get_score(), self.is_over())
