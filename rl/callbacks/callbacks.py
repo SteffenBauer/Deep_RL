@@ -31,24 +31,24 @@ class Callback(object):
         """Called when the current game is over"""
         pass
 
-    def epoch_end(self, *args): 
+    def epoch_end(self, stats):
         """
         Called at the end of a training epoch
 
         # Arguments
-            model:       DQN network
-            name:        Name of the game
-            epoch:       Current training epoch
-            epsilon:     Current epsilon factor
-            win_ratio    Percentage of won games in this epoch
-            avg_score    Average game score in this epoch
-            max_score    Highest game score in this epoch
-            avg_turns    Average number of turns in this epoch
-            max_turns    Highest number of turns in this epoch
-            memory_fill  Records in the replay memory
-            epoch_time   Time in seconds for this epoch
+            stats: Dictionary with these entries:
+                  - model:       DQN network
+                  - name:        Name of the game
+                  - epoch:       Current training epoch
+                  - epsilon:     Current epsilon factor
+                  - win_ratio    Percentage of won games in this epoch
+                  - avg_score    Average game score in this epoch
+                  - max_score    Highest game score in this epoch
+                  - avg_turns    Average number of turns in this epoch
+                  - max_turns    Highest number of turns in this epoch
+                  - memory_fill  Records in the replay memory
+                  - epoch_time   Time in seconds for this epoch
         """
-        model, name, epoch, epsilon, win_ratio, avg_score, max_score, avg_turns, max_turns, memory, epoch_time = args
         pass
 
 if __name__ == '__main__':

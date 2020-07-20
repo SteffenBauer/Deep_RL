@@ -13,10 +13,9 @@ class HistoryLog(Callback):
                     fp.write("{:18s}: {}\n".format(k,v))
                 fp.write("\n")
             fp.write('Epoch, Epsilon, Win Ratio, Avg Score, Max Score, Avg Turns, Max Turns,  Memory,  Time,     Timestamp\n')
-    def epoch_end(self, *args):
-        _model, name, epoch, epsilon, win_ratio, avg_score, max_score, avg_turns, max_turns, memory, epoch_time = args
+    def epoch_end(self, stats):
         st = time.gmtime()
-        timestamp = "{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}".format(st.tm_year, st.tm_mon, st.tm_mday, st.tm_hour, st.tm_min, st.tm_sec)
+        stats['timestamp'] = "{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}".format(st.tm_year, st.tm_mon, st.tm_mday, st.tm_hour, st.tm_min, st.tm_sec)
         with open(self.filename, 'a') as fp:
-            fp.write('{:> 5d}, {:>7.2f}, {:>9.2%}, {:>9.2f}, {:>9.2f}, {:>9.2f}, {:>9.2f}, {:>8d}, {:>5.0f}, {}\n'.format(epoch, epsilon, win_ratio, avg_score, max_score, avg_turns, max_turns, memory, epoch_time, timestamp))
+            fp.write('{epoch:> 5d}, {epsilon:>7.2f}, {win_ratio:>9.2%}, {avg_score:>9.2f}, {max_score:>9.2f}, {avg_turns:>9.2f}, {max_turns:>9.2f}, {memory_fill:>8d}, {epoch_time:>5.0f}, {timestamp}\n'.format(**stats))
 

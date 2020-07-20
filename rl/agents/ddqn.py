@@ -159,11 +159,13 @@ class Agent(object):
             self.history['memory_fill'].append(memory_fill)
             self.history['epoch_time'].append(epoch_time)
 
-            for c in callbacks: 
+            for c in callbacks:
                 c.epoch_end(
-                    self.model, game.name, epoch, epsilon,
-                    win_ratio, avg_score, max_score, avg_turns, max_turns, memory_fill, epoch_time
-                )
+                    {'model': self.model, 'name': game.name, 'epoch': epoch,
+                    'epsilon': epsilon, 'win_ratio': win_ratio,
+                    'avg_score': avg_score, 'max_score': max_score,
+                    'avg_turns': avg_turns, 'max_turns': max_turns,
+                    'memory_fill': memory_fill, 'epoch_time': epoch_time})
 
             epsilon *= epsilon_decay
             epsilon = max(epsilon, epsilon_final)

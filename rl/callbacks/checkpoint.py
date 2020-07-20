@@ -3,9 +3,8 @@ from .callbacks import Callback
 class Checkpoint(Callback):
     def __init__(self, interval=1):
         self.interval = interval
-    def epoch_end(self, *args):
-        model, name, epoch, epsilon, win_ratio, avg_score, max_score, avg_turns, max_turns, memory, epoch_time = args
-        if epoch % self.interval == 0:
-            filename = '{}_{:03d}.h5'.format(name, epoch)
-            model.save(filename)
+    def epoch_end(self, stats):
+        if stats['epoch'] % self.interval == 0:
+            filename = '{}_{:03d}.h5'.format(stats['name'], stats['epoch'])
+            stats['model'].save(filename)
 
