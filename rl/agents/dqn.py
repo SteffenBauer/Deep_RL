@@ -111,7 +111,7 @@ class Agent(object):
                 current_score = 0.0
                 turn_counter = 0
                 while True:
-                    action, pred_q = self.act(game, S, epsilon)
+                    action = self.act(S, epsilon)
                     Fn, r, game_over = game.play(action)
                     for c in callbacks: 
                         c.game_step(Fn, action, r, game_over)
@@ -177,26 +177,23 @@ class Agent(object):
         Q_values = self.model(state[np.newaxis], training=False)
         return Q_values[0] #tf.math.argmax(Q_values[0]).numpy()
 
-    def act(self, game, state, epsilon=0.0):
+    def act(self, state, epsilon=0.0):
         """
         Choose a game action on a given game state.
 
         # Arguments
-          game: Game object (instance of a rl.game.Game subclass)
           state: Game state as numpy array of shape (nb_frames, height, width, channels)
           epsilon: Float between 0.0 and 1.0. Epsilon factor.
             Probability that the agent will choose a random action instead of using the DQN.
 
         # Returns
           action: The chosen game action. Integer between 0 and `game.nb_actions`.
-          value: The predicted Q-Value for the chosen action. Needed for prioritized experience replay.
         """
-        values = self._get_action(state)
         if np.random.rand() < epsilon:
-            action = np.random.randint(self.nb_actions)
+            return np.random.randint(self.nb_actions)
         else:
-            action = np.argmax(values)
-        return action, values[action]
+            values = self._get_action(state)
+            return np.argmax(values)
 
     @tf.function
     def _get_new_qvalues_target(self, gamma, actions, rewards, next_states, game_overs):
@@ -232,7 +229,6 @@ class Agent(object):
 
         grads = tape.gradient(loss, self.model.trainable_variables)
         self.model.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
-        self.memory.update(batch)
         return loss
 
     def _fill_memory(self, game, episodes):

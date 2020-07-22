@@ -8,17 +8,17 @@ import tensorflow.keras as keras
 tf.get_logger().setLevel('ERROR')
 
 from rl.games import snake
-from rl.agents import ddqn
+from rl.agents import dqn
 from rl.memory import uniqmemory
 from rl.callbacks import history
 
 grid_size = 12
-nb_frames = 2
+nb_frames = 1
 
 game = snake.Snake(grid_size, max_turn=128)
 
 inp = keras.layers.Input(shape=(nb_frames, grid_size, grid_size, 3))
-x = keras.layers.Conv3D(16,7,padding='same',strides=1,activation='relu')(inp)
+x = keras.layers.Conv3D(16,5,padding='same',strides=1,activation='relu')(inp)
 x = keras.layers.AveragePooling3D(padding='same')(x)
 x = keras.layers.Conv3D(32,3,padding='same',strides=1,activation='relu')(x)
 x = keras.layers.GlobalMaxPooling3D()(x)
@@ -40,7 +40,7 @@ params = {
     'epsilon_final': 0.0,
     'gamma': 0.9,
     'reset_memory': False,
-    'observe': 500
+    'observe': 100
 }
 
 rlparams = {
@@ -58,8 +58,8 @@ gameparams = {
 }
 
 memory = uniqmemory.UniqMemory(memory_size=rlparams['rl.memory_size'])
-agent = ddqn.Agent(model, memory, with_target=rlparams['rl.with_target'])
-#history = history.HistoryLog("snake_ddqn", {**params, **rlparams, **gameparams})
+agent = dqn.Agent(model, memory, with_target=rlparams['rl.with_target'])
+#history = history.HistoryLog("snake", {**params, **rlparams, **gameparams})
 
 agent.train(game, verbose=1, callbacks=[], **params)
 

@@ -1,7 +1,10 @@
 from .memory import Memory
 
+import collections
 import random
 import numpy as np
+
+eps = 1e-20
 
 class PrioMemory(Memory):
     def __init__(self, model, memory_size=65536, zeta=0.6, beta=0.4):
@@ -9,26 +12,25 @@ class PrioMemory(Memory):
         self.memory_size = memory_size
         self.zeta = zeta
         self.beta = beta
-        self.memory = list()
-        self.hashes = set()
+        self.memory = collections.OrderedDict()
         self.max_prio = 1.0
         pass
 
-    def remember(self, S, a, r, Snext, game_over):
-        h = hash((S.tostring(), a, r, Snext.tostring(), game_over))
-        if h not in self.hashes:
-            self.memory.append([(S,a,r,Snext,game_over), self.max_prio])
-            self.hashes.add(h)
+    def remember(self, model, gamma, S, a, r, Snext, game_over, update=True):
+        entry = (S,a,r,Snext,game_over)
+        if (not update) or (h not in self.memory):
+            self.memory[entry] =  self.max_prio
         else:
-            pass
+            pred = model([S, Snext])
+            new_prio = abs(r + gamma*(v) - vnext) + eps
+            self.memory[entry] = new_prio
         if self.memory_size is not None and len(self.memory) > self.memory_size:
-            Sr, Ar, Rr, SNr, GOr = self.memory.pop(0)[0]
-            h = hash((Sr.tostring(), Ar, Rr, SNr.tostring(), GOr))
-            self.hashes.remove(h)
+            self.memory.popitem(last=False)
 
         pass
 
     def get_batch(self, batch_size):
+        numpy.random.choice(list(d.keys()), p=prob, size=2, replace=False)
         pass
 
     def update(self, batch):

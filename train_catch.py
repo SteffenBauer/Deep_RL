@@ -8,7 +8,7 @@ import tensorflow.keras as keras
 tf.get_logger().setLevel('ERROR')
 
 from rl.games import catch
-from rl.agents import ddqn
+from rl.agents import dqn
 from rl.memory import uniqmemory
 from rl.callbacks import history
 
@@ -57,7 +57,7 @@ gameparams = {
 }
 
 memory = uniqmemory.UniqMemory(memory_size=rlparams['rl.memory_size'])
-agent = ddqn.Agent(model, memory, with_target=rlparams['rl.with_target'])
+agent = dqn.Agent(model, memory, with_target=rlparams['rl.with_target'])
 #history = history.HistoryLog("catch", {**params, **rlparams, **gameparams})
 
 agent.train(game, verbose=1, callbacks=[], **params)
