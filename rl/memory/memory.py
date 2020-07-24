@@ -31,18 +31,6 @@ class Memory:
         """
         pass
 
-    def update(self, batch):
-        """
-        Update memory structure after training
-        
-        # Arguments
-            batch: Training batch
-        
-        # Return
-            none
-        """
-        pass
-
     def reset(self): 
         """Flush and empty the replay buffer"""
         pass

@@ -8,8 +8,8 @@ import tensorflow.keras as keras
 tf.get_logger().setLevel('ERROR')
 
 from rl.games import fruit
-from rl.agents import dqn
-from rl.memory import uniqmemory
+from rl.agents import prioritized_dqn
+from rl.memory import prioritymemory
 from rl.callbacks import history
 
 grid_size = 12
@@ -39,6 +39,8 @@ params = {
     'epsilon_decay': 0.5,
     'epsilon_final': 0.0,
     'gamma': 0.9,
+    'zeta': 0.6,
+    'beta': 0.4,
     'reset_memory': False,
     'observe': 100
 }
@@ -58,8 +60,8 @@ gameparams = {
     'game.max_turn': game.max_turn
 }
 
-memory = uniqmemory.UniqMemory(memory_size=rlparams['rl.memory_size'])
-agent = dqn.Agent(model, memory, with_target=rlparams['rl.with_target'])
+memory = prioritymemory.PrioMemory(model, memory_size=rlparams['rl.memory_size'])
+agent = prioritized_dqn.Agent(model, memory, with_target=rlparams['rl.with_target'])
 #history = history.HistoryLog("fruit", {**params, **rlparams, **gameparams})
 
 agent.train(game, verbose=1, callbacks=[], **params)

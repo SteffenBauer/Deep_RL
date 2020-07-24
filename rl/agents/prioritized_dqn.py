@@ -43,7 +43,7 @@ class Agent(object):
                         'avg_turns': [], 'max_turns': [], 'epoch_time': []}
 
     def train(self, game, epochs=1, initial_epoch=1, episodes=256,
-              batch_size=32, train_freq = 32, target_sync=256, gamma=0.9,
+              batch_size=32, train_freq = 32, target_sync=256, gamma=0.9, zeta=0.6, beta=0.4,
               epsilon_start=1.0, epsilon_decay=0.5, epsilon_final=0.0,
               reset_memory=False, observe=0, verbose=1, callbacks=[]):
 
@@ -63,6 +63,8 @@ class Agent(object):
           train_freq: Integer. Train the Q-Network after these number of turns were played.
           target_sync: Update the target network after these number of turns were played.
           gamma: Float between 0.0 and < 1.0. Discount factor.
+          zeta: Float between 0.0 and 1.0. Priority importance sample factor.
+          beta: Float between 0.0 and 1.0. Importance sampling weight compensation factor.
           epsilon_start: Starting exploration factor between 1.0 and 0.0.
           epsilon_decay: Float between 0.0 and 1.0. Decay factor for epsilon.
           epsilon_final: Minimum value of epsilon.
@@ -85,6 +87,9 @@ class Agent(object):
             - epoch_time:   Time in seconds
         """
 
+        self.zeta = zeta
+        self.beta = beta
+        self.gamma = gamma
         self.history['gamma'] = gamma
         epsilon = epsilon_start
 
@@ -116,13 +121,13 @@ class Agent(object):
                     for c in callbacks: 
                         c.game_step(Fn, action, r, game_over)
                     Sn = np.append(S[1:], np.expand_dims(Fn, axis=0), axis=0)
-                    self.memory.remember(self.model, gamma, S, action, r, Sn, game_over)
+                    self.memory.remember(self.model, self.gamma, S, action, r, Sn, game_over, update=True)
                     S = np.copy(Sn)
                     current_score += r
                     train_count += 1
                     turn_counter += 1
                     if (len(self.memory.memory) >= batch_size) and ((train_count % train_freq) == 0):
-                        result = self._train_step(gamma, batch_size)
+                        result = self._train_step(batch_size)
                     if self.with_target and ((train_count % target_sync) == 0):
                         self.target.set_weights(self.model.get_weights())
                     if game_over:
@@ -212,27 +217,27 @@ class Agent(object):
         mask = tf.one_hot(actions, self.nb_actions)
         return updated_q_values, mask
 
-    def _train_step(self, gamma, batch_size):
-        batch = self.memory.get_batch(batch_size)
+    def _train_step(self, batch_size):
+        batch, weights = self.memory.get_batch(batch_size, self.zeta, self.beta)
         states, actions, rewards, next_states, game_overs = [
             np.array([experience[field_index] for experience in batch])
                 for field_index in range(5)]
         if self.with_target:
-            updated_q_values, mask = self._get_new_qvalues_target(gamma,
+            updated_q_values, mask = self._get_new_qvalues_target(self.gamma,
                 tf.constant(actions), tf.constant(rewards, dtype=tf.float32),
                 tf.constant(next_states, dtype=tf.float32), tf.constant(game_overs, dtype=tf.float32))
         else:
-            updated_q_values, mask = self._get_new_qvalues_model(gamma,
+            updated_q_values, mask = self._get_new_qvalues_model(self.gamma,
                 tf.constant(actions), tf.constant(rewards, dtype=tf.float32),
                 tf.constant(next_states, dtype=tf.float32), tf.constant(game_overs, dtype=tf.float32))
         with tf.GradientTape() as tape:
             q_values = self.model(states, training=True)
             q_action = tf.reduce_sum(tf.multiply(q_values, mask), axis=1)
-            loss = self.model.loss(updated_q_values, q_action)
+            loss = self.model.loss(updated_q_values, q_action, [weights])
 
         grads = tape.gradient(loss, self.model.trainable_variables)
         self.model.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
-        self.memory.update(batch)
+        #self.memory.update(self.model, self.gamma, batch)
         return loss
 
     def _fill_memory(self, game, episodes):
@@ -245,7 +250,7 @@ class Agent(object):
                 action = random.randrange(self.nb_actions)
                 Fn, r, game_over = game.play(action)
                 Sn = np.append(S[1:], np.expand_dims(Fn, axis=0), axis=0)
-                self.memory.remember(S, action, r, Sn, game_over)
+                self.memory.remember(self.model, self.gamma, S, action, r, Sn, game_over, update=False)
                 if game_over:
                     break
             update_progress("{0: 4d}/{1: 4d} | {2: 6d} | ".
