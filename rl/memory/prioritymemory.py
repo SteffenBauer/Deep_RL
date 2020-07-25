@@ -15,17 +15,12 @@ class PrioMemory(Memory):
         self.shape = None
         pass
 
-    def remember(self, model, gamma, S, a, r, Snext, game_over, update):
+    def remember(self, S, a, r, Snext, game_over):
         if self.shape is None:
             self.shape = S.shape
         entry = (S.tobytes(),a,r,Snext.tobytes(),game_over)
-        if (not update) or (entry not in self.memory):
+        if entry not in self.memory:
             self.memory[entry] = self.max_prio
-        else:
-            pred = model(np.stack((S,Snext)), training=False)
-            vnext, v = pred[0][a], np.argmax(pred[1])
-            new_prio = abs(r + gamma*(v) - vnext) + eps
-            self.memory[entry] = new_prio
         if self.memory_size is not None and len(self.memory) > self.memory_size:
             self.memory.popitem(last=False)
 
@@ -44,13 +39,16 @@ class PrioMemory(Memory):
         weights = np.array([(n*probs[idx]) ** (-beta) for idx in chosen_idx])
         return batch, weights
 
-    def update(self, model, gamma, batch):
+    def update(self, gamma, batch):
         S,a,r,Sn,go = zip(*batch)
-        preds = model(np.stack(S+Sn), training=False)
+        preds = self.model.predict(np.array(S+Sn))
         half = int(len(preds)/2)
         for i in range(len(batch)):
-            vnext, v = preds[i][a[i]], np.argmax(preds[i+half])
-            new_prio = abs(r[i] + gamma*(v) - vnext) + eps
+            v, vn = preds[i][a[i]], np.argmax(preds[i+half])
+            if go[i]:
+                new_prio = abs(r[i] - v) + eps
+            else:
+                new_prio = abs(r[i] + gamma*(vn) - v) + eps
             entry = (S[i].tobytes(),a[i],r[i],Sn[i].tobytes(),go[i])
             self.memory[entry] = new_prio
 

@@ -97,7 +97,7 @@ class Agent(object):
             self._fill_memory(game, observe)
 
         if verbose > 0:
-            print("{:^10s}|{:^9s}|{:^14s}|{:^9s}|{:^15s}|{:^17s}|{:^8s}|{:^8s}".format("Epoch", "Epsilon", "Episode", "Win", "Avg/Max Score", "Avg/Max Turns", "Memory", "Time"))
+            print("{:^10s}|{:^9s}|{:^14s}|{:^9s}|{:^15s}|{:^17s}|{:^8s}|{:^7s}|{:^6s}".format("Epoch", "Epsilon", "Episode", "Win", "Avg/Max Score", "Avg/Max Turns", "Memory", "Time", "Beta"))
 
         if self.with_target:
             self.target.set_weights(self.model.get_weights())
@@ -121,7 +121,7 @@ class Agent(object):
                     for c in callbacks: 
                         c.game_step(Fn, action, r, game_over)
                     Sn = np.append(S[1:], np.expand_dims(Fn, axis=0), axis=0)
-                    self.memory.remember(self.model, self.gamma, S, action, r, Sn, game_over, update=True)
+                    self.memory.remember(S, action, r, Sn, game_over)
                     S = np.copy(Sn)
                     current_score += r
                     train_count += 1
@@ -152,8 +152,8 @@ class Agent(object):
                 print("{0: 4d}/{1: 4d} |   {2:.2f}  |    {3: 4d}    ".format(
                     epoch, epochs, epsilon, episode), end=' ')
             if verbose > 0:
-                print(" | {0:>7.2%} | {1: 5.2f} /{2: 5.2f}  | {3: 5.2f} /{4: 5.2f}  | {5: 6d} | {6: 5.0f}".format(
-                    win_ratio, avg_score, max_score, avg_turns, max_turns, memory_fill, epoch_time))
+                print(" | {0:>7.2%} | {1: 5.2f} /{2: 5.2f}  | {3: 5.2f} /{4: 5.2f}  | {5: 6d} | {6: 5.0f} | {7: .2f}".format(
+                    win_ratio, avg_score, max_score, avg_turns, max_turns, memory_fill, epoch_time, self.beta))
 
             self.history['epsilon'].append(epsilon)
             self.history['win_ratio'].append(win_ratio)
@@ -237,7 +237,7 @@ class Agent(object):
 
         grads = tape.gradient(loss, self.model.trainable_variables)
         self.model.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
-        #self.memory.update(self.model, self.gamma, batch)
+        self.memory.update(self.gamma, batch)
         return loss
 
     def _fill_memory(self, game, episodes):
@@ -250,7 +250,7 @@ class Agent(object):
                 action = random.randrange(self.nb_actions)
                 Fn, r, game_over = game.play(action)
                 Sn = np.append(S[1:], np.expand_dims(Fn, axis=0), axis=0)
-                self.memory.remember(self.model, self.gamma, S, action, r, Sn, game_over, update=False)
+                self.memory.remember(S, action, r, Sn, game_over)
                 if game_over:
                     break
             update_progress("{0: 4d}/{1: 4d} | {2: 6d} | ".

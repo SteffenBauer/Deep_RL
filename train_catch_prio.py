@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+PROFILING = False
+
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
@@ -11,6 +13,10 @@ from rl.games import catch
 from rl.agents import prioritized_dqn
 from rl.memory import prioritymemory
 from rl.callbacks import history
+
+if PROFILING:
+    import cProfile
+    import pstats
 
 grid_size = 16
 nb_frames = 1
@@ -29,7 +35,7 @@ model.compile(keras.optimizers.RMSprop(), keras.losses.LogCosh())
 model.summary()
 
 params = {
-    'batch_size': 256,
+    'batch_size': 128,
     'epochs': 20,
     'episodes': 100,
     'train_freq': 8,
@@ -48,7 +54,7 @@ rlparams = {
     'rl.memory': 'PrioMemory',
     'rl.memory_size': 8192,
     'rl.optimizer': 'RMSprop',
-    'rl.with_target': True,
+    'rl.with_target': False,
     'rl.nb_frames': nb_frames
 }
 
@@ -62,5 +68,14 @@ memory = prioritymemory.PrioMemory(model, memory_size=rlparams['rl.memory_size']
 agent = prioritized_dqn.Agent(model, memory, with_target=rlparams['rl.with_target'])
 #history = history.HistoryLog("catch", {**params, **rlparams, **gameparams})
 
+if PROFILING:
+    pr = cProfile.Profile()
+    pr.enable()
+
 agent.train(game, verbose=1, callbacks=[], **params)
+
+if PROFILING:
+    pr.disable()
+    stats = pstats.Stats(pr).sort_stats('cumulative')
+    stats.print_stats('Deep_RL')
 
